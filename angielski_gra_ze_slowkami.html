@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Angielski dla dzieci – Super Gra</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-100 to-purple-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white shadow-2xl rounded-3xl p-6 w-full max-w-lg">
+    <h1 class="text-3xl font-extrabold text-center mb-1">🧠 Angielski dla dzieci</h1>
+    <p class="text-center text-slate-600 mb-4">Słuchaj 👂 mów 🗣️ pisz ✍️</p>
+    <div id="game"></div>
+  </div>
+
+<script>
+// ================= SŁÓWKA =================
+const words = [
+  { en: "apple", pl: "jabłko", emoji: "🍎" },
+  { en: "banana", pl: "banan", emoji: "🍌" },
+  { en: "orange", pl: "pomarańcza", emoji: "🍊" },
+  { en: "house", pl: "dom", emoji: "🏠" },
+  { en: "kitchen", pl: "kuchnia", emoji: "🍳" },
+  { en: "sun", pl: "słońce", emoji: "☀️" },
+  { en: "rain", pl: "deszcz", emoji: "🌧️" },
+  { en: "happy", pl: "szczęśliwy", emoji: "😊" },
+  { en: "sad", pl: "smutny", emoji: "😢" },
+  { en: "run", pl: "biegać", emoji: "🏃" },
+  { en: "jump", pl: "skakać", emoji: "🤾" },
+  { en: "football", pl: "piłka nożna", emoji: "⚽" },
+  { en: "t-shirt", pl: "koszulka", emoji: "👕" }
+];
+
+// ================= STAN =================
+let roundSize = 10;
+let roundWords = [];
+let index = 0;
+let points = 0;
+
+const gameEl = document.getElementById("game");
+
+// ================= START =================
+function startScreen() {
+  gameEl.innerHTML = `
+    <h2 class="text-xl font-bold text-center mb-4">🎮 Zaczynamy?</h2>
+    <button class="btn w-full" onclick="startGame()">▶️ Start gry</button>
+  `;
+}
+
+function startGame() {
+  roundWords = shuffle([...words]).slice(0, roundSize);
+  index = 0;
+  points = 0;
+  next();
+}
+
+// ================= LOGIKA =================
+function next() {
+  if (index >= roundWords.length) return endRound();
+
+  const w = roundWords[index];
+  const speakMode = index % 3 === 0; // co trzecie słowo – mówienie
+
+  if (speakMode) {
+    // ===== MÓWIENIE PO ANGIELSKU =====
+    gameEl.innerHTML = `
+      <p class="text-center text-6xl">${w.emoji}</p>
+      <p class="text-center text-xl">Powiedz po angielsku:</p>
+      <h2 class="text-center text-3xl font-bold">${w.en}</h2>
+      <div class="flex justify-center gap-3 mt-4">
+        <button class="btn" onclick="speak('${w.en}')">🔊 Posłuchaj</button>
+        <button class="btn" onclick="listen('${w.en}')">🎤 Nagraj</button>
+      </div>
+      <p class="text-center mt-3">⭐ ${points} / ${roundWords.length}</p>
+    `;
+  } else {
+    // ===== TŁUMACZENIE NA POLSKI =====
+    const options = shuffle(roundWords).slice(0, 3).map(x => x.pl);
+    if (!options.includes(w.pl)) options[0] = w.pl;
+
+    gameEl.innerHTML = `
+      <p class="text-center text-6xl">${w.emoji}</p>
+      <p class="text-center text-xl">Co to znaczy?</p>
+      <h2 class="text-center text-3xl font-bold">${w.en}</h2>
+      <div class="grid gap-2 mt-4">
+        ${options.map(o => `<button class="btn" onclick="checkPL('${o}')">${o}</button>`).join('')}
+      </div>
+      <p class="text-center mt-3">⭐ ${points} / ${roundWords.length}</p>
+    `;
+  }
+}
+
+// ================= SPRAWDZANIE =================
+function checkPL(answer) {
+  const correct = roundWords[index].pl;
+  if (answer === correct) {
+    points++;
+  } else {
+    alert("❌ Źle! Poprawnie: " + correct);
+  }
+  index++;
+  next();
+}
+
+function listen(correctEn) {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert('Nagrywanie głosu nie jest obsługiwane');
+    return;
+  }
+  const rec = new webkitSpeechRecognition();
+  rec.lang = 'en-US';
+  rec.onresult = e => {
+    const said = e.results[0][0].transcript.toLowerCase();
+    if (said.includes(correctEn.toLowerCase())) {
+      points++;
+    } else {
+      alert("❌ Spróbuj jeszcze raz. Powiedz: " + correctEn);
+    }
+    index++;
+    next();
+  };
+  rec.start();
+}
+
+// ================= KONIEC =================
+function endRound() {
+  const cup = points >= roundWords.length * 0.8 ? '🏆' : '🎖️';
+  gameEl.innerHTML = `
+    <h2 class="text-3xl text-center font-bold">${cup}</h2>
+    <p class="text-center mt-2">Wynik: ${points} / ${roundWords.length}</p>
+    <button class="btn w-full mt-4" onclick="startGame()">▶️ Następna runda</button>
+  `;
+}
+
+function speak(text) {
+  const msg = new SpeechSynthesisUtterance(text);
+  msg.lang = 'en-US';
+  speechSynthesis.speak(msg);
+}
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+startScreen();
+</script>
+
+<style>
+.btn { background: linear-gradient(to right, #3b82f6, #6366f1); color: white; padding: 10px; border-radius: 1rem; font-weight: bold; }
+</style>
+</body>
+</html>
